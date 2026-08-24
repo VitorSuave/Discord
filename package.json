@@ -5,12 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "bun run --watch src/index.ts",
-    "build": "echo 'nada para compilar — Bun executa TS direto'",
     "start": "bun run src/index.ts",
-    "db:generate": "bunx prisma generate",
-    "db:migrate": "bunx prisma migrate deploy",
-    "db:migrate:dev": "bunx prisma migrate dev",
-    "db:studio": "bunx prisma studio"
+    "postinstall": "prisma generate" 
   },
   "dependencies": {
     "@hono/node-server": "^1.13.0",

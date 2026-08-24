@@ -4,7 +4,7 @@
     "entry": "src/index.ts",
     "httpPort": 3000,
     "build": {
-      "command": "bun install && bunx prisma generate",
+      "command": "bun install",
       "outputDirectory": "."
     }
   }
