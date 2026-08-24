@@ -4,8 +4,13 @@
     "entry": "src/index.ts",
     "httpPort": 3000,
     "build": {
-      "command": "bun install && bunx prisma generate",
-      "outputDirectory": "."
+      "command": "bun install && bunx prisma generate && mkdir -p bundle && cp node_modules/.prisma/client/*.node bundle/"
+    },
+    "env": {
+      "vars": {
+        "PORT": "3000",
+        "PRISMA_QUERY_ENGINE_LIBRARY": "./bundle/libquery_engine-debian-openssl-3.0.x.so.node"
+      }
     }
   }
 }
