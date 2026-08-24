@@ -1,0 +1,332 @@
+// =====================================================================
+// SCHEMA.PRISMA — Plataforma de Comunicação em Tempo Real
+// =====================================================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+// ---------------------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------------------
+
+enum PresenceStatus {
+  ONLINE
+  IDLE
+  DND
+  INVISIBLE
+  OFFLINE
+}
+
+enum ChannelType {
+  TEXT
+  VOICE
+  ANNOUNCEMENT
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  BLOCKED
+  DECLINED
+}
+
+enum MessageType {
+  DEFAULT
+  SYSTEM_JOIN
+  SYSTEM_PIN
+  SYSTEM_CALL
+}
+
+// ---------------------------------------------------------------------
+// USUÁRIO
+// ---------------------------------------------------------------------
+
+model User {
+  id              String   @id @default(uuid())
+  username        String
+  discriminator   String
+  email           String   @unique
+  passwordHash    String
+
+  avatarUrl       String?
+  bannerUrl       String?
+  bio             String?  @db.VarChar(280)
+  accentColor     String?
+
+  status          PresenceStatus @default(OFFLINE)
+  customStatus    String?  @db.VarChar(128)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  ownedServers        Server[]            @relation("ServerOwner")
+  serverMemberships   ServerMember[]
+  messages            Message[]
+  reactions           Reaction[]
+  invitesCreated      Invite[]
+  voiceSessions       VoiceSession[]
+
+  friendshipsSent      Friendship[]        @relation("FriendshipRequester")
+  friendshipsReceived  Friendship[]        @relation("FriendshipAddressee")
+
+  dmParticipations     DMParticipant[]
+
+  channelPermissionOverrides ChannelPermissionOverride[]
+
+  @@unique([username, discriminator])
+  @@index([email])
+}
+
+model Server {
+  id          String   @id @default(uuid())
+  name        String
+  iconUrl     String?
+  ownerId     String
+  owner       User     @relation("ServerOwner", fields: [ownerId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     ServerMember[]
+  categories  Category[]
+  channels    Channel[]
+  roles       Role[]
+  invites     Invite[]
+
+  @@index([ownerId])
+}
+
+model ServerMember {
+  id          String   @id @default(uuid())
+  userId      String
+  serverId    String
+  nickname    String?
+  joinedAt    DateTime @default(now())
+
+  isServerMuted    Boolean @default(false)
+  isServerDeafened Boolean @default(false)
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  roles       MemberRole[]
+
+  @@unique([userId, serverId])
+  @@index([serverId])
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  serverId  String
+  name      String
+  position  Int       @default(0)
+
+  server    Server    @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  channels  Channel[]
+
+  @@index([serverId])
+}
+
+model Channel {
+  id          String       @id @default(uuid())
+  serverId    String
+  categoryId  String?
+  name        String
+  type        ChannelType  @default(TEXT)
+  topic       String?
+  position    Int          @default(0)
+  isNsfw      Boolean      @default(false)
+  userLimit   Int          @default(0)
+
+  server      Server       @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  category    Category?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  messages              Message[]
+  permissionOverrides   ChannelPermissionOverride[]
+  voiceSessions         VoiceSession[]
+
+  @@index([serverId])
+  @@index([categoryId])
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  serverId    String
+  name        String
+  color       String?
+  position    Int      @default(0)
+  isDefault   Boolean  @default(false)
+
+  permissions BigInt   @default(0)
+
+  server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  members     MemberRole[]
+  channelOverrides ChannelPermissionOverride[]
+
+  @@index([serverId])
+}
+
+model MemberRole {
+  memberId  String
+  roleId    String
+
+  member    ServerMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  role      Role         @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([memberId, roleId])
+  @@index([roleId])
+}
+
+model ChannelPermissionOverride {
+  id         String   @id @default(uuid())
+  channelId  String
+  roleId     String?
+  userId     String?
+
+  allow      BigInt   @default(0)
+  deny       BigInt   @default(0)
+
+  channel    Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  role       Role?    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user       User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([channelId])
+  @@unique([channelId, roleId, userId])
+}
+
+model Invite {
+  code        String   @id @default(cuid())
+  serverId    String
+  createdById String
+
+  maxUses     Int?
+  uses        Int      @default(0)
+  expiresAt   DateTime?
+
+  createdAt   DateTime @default(now())
+
+  server      Server   @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  @@index([serverId])
+}
+
+model Friendship {
+  id            String            @id @default(uuid())
+  requesterId   String
+  addresseeId   String
+  status        FriendshipStatus  @default(PENDING)
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  requester     User @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee     User @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId])
+}
+
+model DMChannel {
+  id          String   @id @default(uuid())
+  isGroup     Boolean  @default(false)
+  name        String?
+  iconUrl     String?
+  createdAt   DateTime @default(now())
+
+  participants DMParticipant[]
+  messages     Message[]
+}
+
+model DMParticipant {
+  dmChannelId String
+  userId      String
+  joinedAt    DateTime @default(now())
+
+  dmChannel   DMChannel @relation(fields: [dmChannelId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([dmChannelId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id          String       @id @default(uuid())
+  channelId   String?
+  dmChannelId String?
+  authorId    String
+  content     String       @db.Text
+  type        MessageType  @default(DEFAULT)
+
+  replyToId   String?
+
+  createdAt   DateTime     @default(now())
+  editedAt    DateTime?
+  deletedAt   DateTime?
+
+  channel     Channel?     @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  dmChannel   DMChannel?   @relation(fields: [dmChannelId], references: [id], onDelete: Cascade)
+  author      User         @relation(fields: [authorId], references: [id])
+  replyTo     Message?     @relation("MessageReply", fields: [replyToId], references: [id])
+  replies     Message[]    @relation("MessageReply")
+
+  reactions   Reaction[]
+  attachments Attachment[]
+
+  @@index([channelId, createdAt])
+  @@index([dmChannelId, createdAt])
+}
+
+model Attachment {
+  id          String   @id @default(uuid())
+  messageId   String
+  url         String
+  fileName    String
+  fileSize    Int
+  contentType String
+
+  message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+model Reaction {
+  id          String   @id @default(uuid())
+  messageId   String
+  userId      String
+  emoji       String
+
+  createdAt   DateTime @default(now())
+
+  message     Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+}
+
+model VoiceSession {
+  id             String    @id @default(uuid())
+  channelId      String
+  userId         String
+
+  joinedAt       DateTime  @default(now())
+  leftAt         DateTime?
+
+  isMuted        Boolean   @default(false)
+  isDeafened     Boolean   @default(false)
+  isCameraOn     Boolean   @default(false)
+  isScreenSharing Boolean  @default(false)
+
+  channel        Channel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([channelId, leftAt])
+  @@index([userId])
+}

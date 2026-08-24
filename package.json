@@ -1,0 +1,32 @@
+{
+  "name": "discord-clone-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "build": "echo 'nada para compilar — Bun executa TS direto'",
+    "start": "bun run src/index.ts",
+    "db:generate": "bunx prisma generate",
+    "db:migrate": "bunx prisma migrate deploy",
+    "db:migrate:dev": "bunx prisma migrate dev",
+    "db:studio": "bunx prisma studio"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.0",
+    "@prisma/client": "^6.6.0",
+    "express": "^5.2.1",
+    "hono": "^4.6.0",
+    "livekit-client": "^2.22.0",
+    "react": "^19.2.8"
+  },
+  "devDependencies": {
+    "@prisma/cli": "^3.0.0-beta.30",
+    "@prisma/compute-sdk": "^0.1.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "prisma": "6.6.0",
+    "typescript": "^5.6.0"
+  }
+}

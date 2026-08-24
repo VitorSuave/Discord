@@ -1,0 +1,27 @@
+{
+  "auth": null,
+  "project": {
+    "rememberedByWorkspace": {},
+    "lastResolved": null,
+    "repositoryConnectionsByProject": {}
+  },
+  "branch": {
+    "active": "preview"
+  },
+  "app": {
+    "selectedByProject": {
+      "proj_cmt6lrih516p81gf6w9htdp56": {
+        "id": "cps_zyutljhmn9wjwz0crxlhgvhi",
+        "name": "discord-clone-app"
+      }
+    },
+    "knownLiveDeploymentByProject": {
+      "proj_cmt6lrih516p81gf6w9htdp56": {
+        "cps_zyutljhmn9wjwz0crxlhgvhi": "cpv_kwxyeknkbkzopo3qm7ja8ar4"
+      }
+    }
+  },
+  "agent": {
+    "setupPromptDismissedAt": null
+  }
+}

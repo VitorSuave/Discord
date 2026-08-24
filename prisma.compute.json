@@ -1,0 +1,11 @@
+{
+  "app": {
+    "framework": "bun",
+    "entry": "src/index.ts",
+    "httpPort": 3000,
+    "build": {
+      "command": "bun install && bunx prisma generate",
+      "outputDirectory": "."
+    }
+  }
+}
