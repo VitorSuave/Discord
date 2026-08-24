@@ -1,0 +1,13 @@
+{
+  "region": "us-east-1",
+  "app": {
+    "name": "discord",
+    "framework": "bun",
+    "entry": "src/index.ts",
+    "httpPort": 3000,
+    "build": {
+      "command": null,
+      "outputDirectory": "."
+    }
+  }
+}
